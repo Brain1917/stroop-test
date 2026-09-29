@@ -1,0 +1,267 @@
+:root {
+  --surface-1: #fcfcfb;
+  --page-plane: #f9f9f7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+
+  --status-good: #0ca30c;
+  --status-critical: #d03b3b;
+
+  --series-accuracy: #2a78d6;
+  --series-rt: #1baf7a;
+
+  --color-red: #e34948;
+  --color-blue: #2a78d6;
+  --color-green: #008300;
+  --color-yellow: #eda100;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0 20px 40px;
+  background: var(--page-plane);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.app-header {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-top: 32px;
+  text-align: center;
+}
+
+.app-header h1 {
+  margin-bottom: 4px;
+}
+
+.app-header p {
+  color: var(--text-secondary);
+  margin-top: 0;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.screen {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}
+
+.instructions {
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 520px;
+  margin: 0 auto 24px;
+}
+
+.btn-primary {
+  background: var(--series-accuracy);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 28px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.08);
+}
+
+.game-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 24px;
+}
+
+.timer {
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.score {
+  font-size: 20px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.stimulus-wrap {
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 48px 16px;
+  margin-bottom: 24px;
+  transition: border-color 120ms ease;
+}
+
+.stimulus-wrap.flash-correct {
+  border-color: var(--status-good);
+}
+
+.stimulus-wrap.flash-incorrect {
+  border-color: var(--status-critical);
+}
+
+.stimulus {
+  font-size: 56px;
+  font-weight: 700;
+}
+
+.answers {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.answer-swatch {
+  height: 72px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.answer-swatch:hover {
+  filter: brightness(1.08);
+}
+
+.result-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+  text-align: left;
+  max-width: 420px;
+  margin: 0 auto 24px;
+}
+
+.result-stats dt {
+  color: var(--text-secondary);
+}
+
+.result-stats dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.history {
+  margin-top: 32px;
+}
+
+.history-scroll {
+  overflow-x: auto;
+}
+
+#storage-message {
+  color: var(--status-critical);
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.chart-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.chart-note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th, td {
+  text-align: left;
+  padding: 10px 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--gridline);
+}
+
+td {
+  border-bottom: 1px solid var(--gridline);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.empty-history {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px;
+}
+
+.app-footer {
+  max-width: 720px;
+  margin: 32px auto 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .screen {
+    padding: 20px 12px;
+  }
+  .stimulus {
+    font-size: clamp(28px, 8vw, 42px);
+  }
+  .answers {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .charts {
+    grid-template-columns: 1fr;
+  }
+  .result-stats {
+    grid-template-columns: 1fr;
+  }
+}

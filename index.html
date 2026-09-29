@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Струп-тест</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <h1>Струп-тест</h1>
+  <p>Тренажёр когнитивного контроля. Одна сессия - 60 секунд.</p>
+</header>
+
+<main>
+
+  <section id="screen-start" class="screen">
+    <p class="instructions">
+      В центре появится название цвета. Цвет букв может совпадать со словом или отличаться от него.
+      Нажми на плашку, чей цвет совпадает с цветом <strong>чернил</strong>, а не с написанным словом.
+    </p>
+    <button id="btn-start" class="btn-primary" type="button">Начать сессию</button>
+  </section>
+
+  <section id="screen-game" class="screen hidden">
+    <div class="game-hud">
+      <div class="timer" id="timer">60.0</div>
+      <div class="score"><span id="score-correct">0</span> / <span id="score-total">0</span></div>
+    </div>
+    <div class="stimulus-wrap" id="stimulus-wrap">
+      <div class="stimulus" id="stimulus"></div>
+    </div>
+    <div class="answers" id="answers"></div>
+  </section>
+
+  <section id="screen-result" class="screen hidden">
+    <h2>Результат сессии</h2>
+    <dl class="result-stats" id="result-stats"></dl>
+    <button id="btn-again" class="btn-primary" type="button">Ещё раз</button>
+  </section>
+
+  <section class="history">
+    <h2>История сессий</h2>
+
+    <div class="charts">
+      <div class="chart-card">
+        <p class="chart-title">Точность, %</p>
+        <canvas id="chart-accuracy" width="420" height="200"></canvas>
+        <p class="chart-note" id="chart-accuracy-note"></p>
+      </div>
+      <div class="chart-card">
+        <p class="chart-title">Среднее время реакции, мс</p>
+        <canvas id="chart-rt" width="420" height="200"></canvas>
+        <p class="chart-note" id="chart-rt-note"></p>
+      </div>
+    </div>
+
+    <p id="storage-message" class="hidden" role="status"></p>
+    <div class="history-scroll">
+    <table id="history-table">
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Проб</th>
+          <th>Точность</th>
+          <th>Среднее RT</th>
+          <th>Интерференция</th>
+        </tr>
+      </thead>
+      <tbody id="history-body"></tbody>
+    </table>
+    </div>
+    <p class="empty-history hidden" id="empty-history">Пока нет ни одной сессии.</p>
+  </section>
+
+</main>
+
+<footer class="app-footer">
+  История сохраняется только в этом браузере на этом устройстве. При очистке данных браузера она может исчезнуть.
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
