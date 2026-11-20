@@ -276,6 +276,16 @@ a { color: #165da8; }
 .answers button { touch-action: manipulation; }
 .answer-swatch span { background: white; color: #18212c; padding: 3px 9px; border-radius: 5px; font-weight: 650; }
 button:focus-visible, summary:focus-visible { outline: 3px solid #101828; outline-offset: 3px; }
-#feedback { min-height: 1.5em; margin-bottom: 0; }
+#stimulus-wrap { display: grid; place-items: center; min-height: 150px; padding: 16px; }
+#stimulus, #feedback { grid-area: 1 / 1; }
+#feedback { margin: 0; font-size: clamp(20px, 4vw, 30px); font-weight: 700; }
+#screen-game[data-verdict="correct"] { background: #e1f5e7; border-color: #218148; }
+#screen-game[data-verdict="correct"] #feedback { color: #185636; }
+#screen-game[data-verdict="wrong"] { background: #fde6e5; border-color: #b73842; }
+#screen-game[data-verdict="wrong"] #feedback { color: #87232c; }
+#counts { margin-bottom: 0; font-variant-numeric: tabular-nums; }
+.history-scroll { margin-bottom: 16px; }
+.history small { display: block; }
+
 .playing .history, .playing #legacy { display: none; }
 #guidance { line-height: 1.5; }

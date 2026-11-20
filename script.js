@@ -33,25 +33,30 @@ function startBlock(n) {
   blockStart = performance.now();
   el('phase').textContent = n ? 'Блок ' + n + ' из 2' : 'Разминка';
   el('feedback').textContent = '';
+  updateCounts();
   screen('game');
   nextTrial();
 }
 
+function updateCounts() {
+  const correct = phase === 0 ? warmupHits : rows.filter(t => t.choice === t.ink).length;
+  const total = phase === 0 ? cursor : rows.length;
+  el('counts').textContent = (phase === 0 ? 'Разминка' : 'За сессию') +
+    ' · Верно ' + correct + ' · Ошибок ' + (total - correct);
+}
+
 function nextTrial() {
   active = null;
-  el('feedback').textContent = '';
-  el('stimulus').textContent = '+';
-  el('stimulus').style.color = '#767676';
-  el('progress').textContent = (cursor + 1) + ' / ' + deck.length;
-  timer = setTimeout(() => {
-    frame = requestAnimationFrame(() => {
-      if (document.hidden) { interrupt(); return; }
-      const trial = deck[cursor];
-      el('stimulus').textContent = Stroop.colors[trial.word].label;
-      el('stimulus').style.color = Stroop.colors[trial.ink].hex;
-      active = performance.now();
-    });
-  }, 250);
+  frame = requestAnimationFrame(() => {
+    if (document.hidden) { interrupt(); return; }
+    const trial = deck[cursor];
+    el('screen-game').removeAttribute('data-verdict');
+    el('feedback').textContent = '';
+    el('progress').textContent = (cursor + 1) + ' / ' + deck.length;
+    el('stimulus').textContent = Stroop.colors[trial.word].label;
+    el('stimulus').style.color = Stroop.colors[trial.ink].hex;
+    active = performance.now();
+  });
 }
 
 function answer(choice) {
@@ -60,26 +65,30 @@ function answer(choice) {
   active = null;
   const trial = deck[cursor++];
   const correct = choice === trial.ink;
-  el('stimulus').textContent = '·';
+  el('stimulus').textContent = '';
+  el('screen-game').dataset.verdict = correct ? 'correct' : 'wrong';
+  el('feedback').textContent = correct ? 'Верно' : 'Ошибка · цвет букв: ' + Stroop.colors[trial.ink].label;
   if (phase === 0) {
     warmupHits += Number(correct);
-    el('feedback').textContent = correct ? 'Верно' : 'Цвет букв — ' + Stroop.colors[trial.ink].label;
+
   } else {
     rows.push({...trial, choice, rt});
   }
+  updateCounts();
   if (cursor === deck.length && phase > 0) scoredDuration += performance.now() - blockStart;
-  timer = setTimeout(() => cursor < deck.length ? nextTrial() : finishBlock(), phase === 0 ? 850 : 0);
+  timer = setTimeout(() => cursor < deck.length ? nextTrial() : finishBlock(), correct ? 380 : 750);
 }
 
 function finishBlock() {
   if (phase === 0) {
     const passed = warmupHits >= 6;
     intermission('Разминка завершена', 'Верно ' + warmupHits + ' из 8. ' +
-      (passed ? 'Дальше отвечай точно и быстро. Результат появится в конце.' :
+      (passed ? 'Теперь начинается зачёт. Ошибки разминки в него не входят.' :
         'Попробуй ещё раз. Для перехода нужны 6 верных ответов. Выбирай цвет букв.'),
       passed ? 'Начать первый блок' : 'Повторить разминку', () => startBlock(passed ? 1 : 0));
   } else if (phase === 1) {
-    intermission('Первый блок завершён', 'Отдохни и продолжай, когда будешь готов.',
+    const hits = rows.filter(t => t.choice === t.ink).length;
+    intermission('Первый блок завершён', 'Верно ' + hits + ' из 32. Ошибок: ' + (32 - hits) + '. Отдохни перед вторым блоком.',
       'Начать второй блок', () => startBlock(2));
   } else {
     phase = 'result';
@@ -88,6 +97,7 @@ function finishBlock() {
     const dif = s.interference_ms === null ? 'Недостаточно данных' : ms(s.interference_ms);
     const display = [
       ['Точность', s.correct + ' из 64 (' + s.accuracy_pct.toFixed(0) + '%)'],
+      ['Ошибки', s.incorrect],
       ['Слово совпало с цветом', (s.correct - s.conflictCorrect) + '/16 · ' + ms(s.avg_rt_congruent_ms)],
       ['Слово отличалось от цвета', s.conflictCorrect + '/48 · ' + ms(s.avg_rt_incongruent_ms)],
       ['Разница времени', dif]
@@ -112,6 +122,10 @@ function interrupt() {
   clearTimeout(timer);
   cancelAnimationFrame(frame);
   active = null;
+  if (phase === 2 && cursor === deck.length) {
+    finishBlock();
+    return;
+  }
   intermission('Сессия прервана', 'Вкладка была скрыта. Чтобы пауза не повлияла на результат, начни заново.',
     'Начать разминку', start);
 }

@@ -1,32 +1,49 @@
 const HISTORY_KEY = "stroop-test.history.v2";
+const SESSION_PREFIX = "stroop-test.feedback-session.";
+const unsavedSessions = [];
 let sessionHistory = [];
-let historyReadable = true;
+
 function saveSession(summary) {
-  sessionHistory.push(summary);
-  renderHistory(sessionHistory);
+  summary.feedback = true;
   try {
-    if (!historyReadable) throw new Error("History unavailable");
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(sessionHistory));
-    showStorageMessage("");
+    // Separate keys let two open tabs finish independently.
+    localStorage.setItem(SESSION_PREFIX + crypto.randomUUID(), JSON.stringify(summary));
   } catch {
-    showStorageMessage("Результат не сохранён в браузере. Он доступен до закрытия или перезагрузки страницы.");
+    unsavedSessions.push(summary);
   }
+  loadHistory();
 }
 
 function loadHistory() {
   try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    const history = raw === null ? [] : JSON.parse(raw);
-    if (!Array.isArray(history) || !history.every(isValidSession)) {
-      throw new Error("Invalid history");
+    let previous;
+    try { previous = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch { previous = null; }
+    const validPrevious = Array.isArray(previous) ? previous.filter(isValidSession) : [];
+    let damaged = !Array.isArray(previous) || validPrevious.length !== previous.length;
+    const recent = [];
+    for (const key of Object.keys(localStorage)) {
+      if (!key.startsWith(SESSION_PREFIX)) continue;
+      try {
+        const row = JSON.parse(localStorage.getItem(key));
+        if (!isValidSession(row)) throw Error();
+        recent.push(row);
+      } catch { damaged = true; }
     }
-    sessionHistory = history;
+    sessionHistory = [...validPrevious, ...recent];
+    showStorageMessage(damaged ? "Часть записей истории не удалось прочитать." : "");
   } catch {
-    historyReadable = false;
-    showStorageMessage("История недоступна или повреждена. Можно играть, но новые результаты будут доступны только до перезагрузки страницы.");
+    showStorageMessage("Часть истории недоступна в этом браузере.");
   }
-  renderHistory(sessionHistory);
+  if (unsavedSessions.length) {
+    showStorageMessage("Часть результатов доступна только до закрытия этой страницы.");
+  }
+  const rows = [...sessionHistory, ...unsavedSessions].sort((a,b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+  renderHistory(rows);
 }
+
+window.addEventListener("storage", event => {
+  if (event.key === null || event.key === HISTORY_KEY || event.key.startsWith(SESSION_PREFIX)) loadHistory();
+});
 
 function isValidSession(s) {
   if (!s || typeof s !== "object" || typeof s.timestamp !== "string" ||
@@ -75,8 +92,9 @@ function renderHistoryTable(history, legacy = false) {
   [...history].reverse().forEach((s) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${formatDate(s.timestamp)}</td>
-      <td>${s.total_trials}</td>
+      <td>${formatDate(s.timestamp)}${!legacy && !s.feedback ? "<small>До подсказок</small>" : ""}</td>
+      ${legacy ? "<td>" + s.total_trials + "</td>" :
+        "<td>" + s.correct + " / " + s.total_trials + "</td><td>" + s.incorrect + "</td>"}
       <td>${s.accuracy_pct.toFixed(0)}%</td>
       <td>${s.avg_rt_ms != null ? Math.round(s.avg_rt_ms) + " мс" : "-"}</td>
       <td>${s.interference_ms != null ? Math.round(s.interference_ms) + " мс" : "-"}</td>
@@ -85,7 +103,7 @@ function renderHistoryTable(history, legacy = false) {
   });
 }
 
-function drawTrendChart(canvas, noteEl, points, color, formatValue) {
+function drawTrendChart(canvas, noteEl, points, color, formatValue, sessionCount, percent = false) {
   const ctx = canvas.getContext("2d");
   const width = canvas.width;
   const height = canvas.height;
@@ -115,10 +133,13 @@ function drawTrendChart(canvas, noteEl, points, color, formatValue) {
   minV -= rangePad;
   maxV += rangePad;
 
+  minV = percent ? 0 : Math.max(0, minV);
+  if (percent) maxV = 100;
+
   const xForIndex = (i) =>
-    points.length === 1
+    sessionCount === 1
       ? padding.left + plotW / 2
-      : padding.left + (plotW * i) / (points.length - 1);
+      : padding.left + (plotW * i) / (sessionCount - 1);
   const yForValue = (v) => padding.top + plotH - ((v - minV) / (maxV - minV)) * plotH;
 
   ctx.strokeStyle = "#e1e0d9";
@@ -150,7 +171,7 @@ function drawTrendChart(canvas, noteEl, points, color, formatValue) {
     ctx.lineCap = "round";
     ctx.beginPath();
     points.forEach((p, i) => {
-      const x = xForIndex(i);
+      const x = xForIndex(p.index);
       const y = yForValue(p.value);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
@@ -159,7 +180,7 @@ function drawTrendChart(canvas, noteEl, points, color, formatValue) {
   }
 
   points.forEach((p, i) => {
-    const x = xForIndex(i);
+    const x = xForIndex(p.index);
     const y = yForValue(p.value);
     ctx.beginPath();
     ctx.arc(x, y, 6, 0, Math.PI * 2);
@@ -182,15 +203,15 @@ function drawTrendChart(canvas, noteEl, points, color, formatValue) {
 function renderCharts(history) {
   const accuracyPoints = history.map((s, i) => ({ index: i, value: s.accuracy_pct }));
   const rtPoints = history
-    .filter((s) => s.avg_rt_ms != null)
-    .map((s, i) => ({ index: i, value: s.avg_rt_ms }));
+    .map((s, i) => ({ index: i, value: s.avg_rt_ms }))
+    .filter((p) => p.value != null);
 
   drawTrendChart(
     document.getElementById("chart-accuracy"),
     document.getElementById("chart-accuracy-note"),
     accuracyPoints,
     "#2a78d6",
-    (v) => `${Math.round(v)}%`
+    (v) => `${Math.round(v)}%`, history.length, true
   );
 
   drawTrendChart(
@@ -198,13 +219,13 @@ function renderCharts(history) {
     document.getElementById("chart-rt-note"),
     rtPoints,
     "#1baf7a",
-    (v) => `${Math.round(v)} мс`
+    (v) => `${Math.round(v)} мс`, history.length
   );
 }
 
 function renderHistory(history) {
   renderHistoryTable(history);
-  renderCharts(history);
+  renderCharts(history.filter(s => s.feedback === true));
 }
 
 

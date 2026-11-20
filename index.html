@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Струп-тест</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=feedback1">
 </head>
 <body>
 
@@ -19,7 +19,7 @@
     <h2>Выбери цвет букв</h2>
     <p class="instructions">Если слово <strong style="color:#2467bf">красный</strong> написано синим, нажми синюю кнопку.
     Можно отвечать мышью, касанием или клавишами 1–4. Используй один способ от начала до конца.</p>
-    <p>Сначала 8 проб с подсказками. Затем два блока по 32 задания с перерывом.</p>
+    <p>Сначала 8 проб для разминки. В зачёт идут следующие 64 ответа: два блока по 32. После каждого выбора ты увидишь результат.</p>
     <button id="btn-start" class="btn-primary" type="button">Начать разминку</button>
     <details><summary>Как устроена тренировка</summary>
     <p>В классическом опыте Струпа участники называли цвета вслух. Здесь ты выбираешь цвет кнопкой. Во время разминки проверь, что различаешь все четыре цвета и помнишь их места.</p>
@@ -38,9 +38,10 @@
     <div class="game-hud"><strong id="phase"></strong><span id="progress"></span></div>
     <div class="stimulus-wrap" id="stimulus-wrap">
       <div class="stimulus" id="stimulus"></div>
+      <p id="feedback" role="status" aria-atomic="true"></p>
     </div>
     <div class="answers" id="answers"></div>
-    <p id="feedback" role="status"></p>
+    <p id="counts"></p>
   </section>
 
   <section id="screen-result" class="screen hidden">
@@ -52,7 +53,25 @@
 
   <section class="history">
     <h2>История сессий</h2>
+    <p>Последняя сессия сверху. В таблице только зачётные ответы. Графики показывают сессии с цветовой подсказкой после ответа.</p>
 
+    <p id="storage-message" class="hidden" role="status"></p>
+    <div class="history-scroll">
+    <table id="history-table">
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Верно / всего</th>
+          <th>Ошибки</th>
+          <th>Точность</th>
+          <th>Время ответа</th>
+          <th>Разница, мс</th>
+        </tr>
+      </thead>
+      <tbody id="history-body"></tbody>
+    </table>
+    </div>
+    <p class="empty-history hidden" id="empty-history">Здесь появится результат после двух зачётных блоков.</p>
     <div class="charts">
       <div class="chart-card">
         <p class="chart-title">Точность, %</p>
@@ -66,22 +85,6 @@
       </div>
     </div>
 
-    <p id="storage-message" class="hidden" role="status"></p>
-    <div class="history-scroll">
-    <table id="history-table">
-      <thead>
-        <tr>
-          <th>Дата</th>
-          <th>Проб</th>
-          <th>Точность</th>
-          <th>Время ответа</th>
-          <th>Разница, мс</th>
-        </tr>
-      </thead>
-      <tbody id="history-body"></tbody>
-    </table>
-    </div>
-    <p class="empty-history hidden" id="empty-history">Пока нет ни одной сессии.</p>
   </section>
 
 <details id="legacy" hidden><summary>Архив минутных сессий</summary>
@@ -95,7 +98,7 @@
 </footer>
 
 <script src="protocol.js"></script>
-<script src="history.js"></script>
-<script src="script.js"></script>
+<script src="history.js?v=feedback1"></script>
+<script src="script.js?v=feedback1"></script>
 </body>
 </html>

@@ -27,3 +27,30 @@ test('errors count toward accuracy and never toward reaction times', () => {
   assert.equal(s.conflictTotal, 3);
   assert.equal(summarize(rows.slice(-1), 1).interference_ms, null);
 });
+
+test('two open tabs keep both new sessions alongside the previous format', () => {
+  const vm = require('node:vm');
+  const source = require('node:fs').readFileSync(require.resolve('./history.js'), 'utf8');
+  const row = summarize([{word: 0, ink: 0, choice: 1, rt: 300}], 1);
+  const storage = {'stroop-test.history.v2': JSON.stringify([row])};
+  Object.defineProperties(storage, {
+    getItem: {value(k) {return this[k] ?? null;}},
+    setItem: {value(k, v) {this[k] = v;}}
+  });
+  function openTab() {
+    const tab = vm.createContext({localStorage: storage, crypto: require('node:crypto'),
+      window: {addEventListener() {}}, document: {}});
+    vm.runInContext(source.replace(/loadHistory\(\);\s*loadArchive\(\);\s*$/, ''), tab);
+    vm.runInContext('renderHistory = rows => globalThis.visible = rows; showStorageMessage = () => {}; loadHistory()', tab);
+    return tab;
+  }
+  const first = openTab(), second = openTab();
+  for (const tab of [first, second]) {
+    tab.row = {...row};
+    vm.runInContext('saveSession(row)', tab);
+  }
+  const reloaded = openTab();
+  assert.equal(reloaded.visible.length, 3);
+  assert.equal(reloaded.visible.filter(s => s.feedback).length, 2);
+  assert.ok(reloaded.visible.every(s => s.incorrect === 1));
+});
