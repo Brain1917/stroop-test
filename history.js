@@ -5,6 +5,7 @@ let sessionHistory = [];
 
 function saveSession(summary) {
   summary.feedback = true;
+  summary.immediate = true;
   try {
     // Separate keys let two open tabs finish independently.
     localStorage.setItem(SESSION_PREFIX + crypto.randomUUID(), JSON.stringify(summary));
@@ -92,7 +93,7 @@ function renderHistoryTable(history, legacy = false) {
   [...history].reverse().forEach((s) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${formatDate(s.timestamp)}${!legacy && !s.feedback ? "<small>До подсказок</small>" : ""}</td>
+      <td>${formatDate(s.timestamp)}${legacy || s.immediate ? "" : s.feedback ? "<small>С паузой</small>" : "<small>До подсказок</small>"}</td>
       ${legacy ? "<td>" + s.total_trials + "</td>" :
         "<td>" + s.correct + " / " + s.total_trials + "</td><td>" + s.incorrect + "</td>"}
       <td>${s.accuracy_pct.toFixed(0)}%</td>
@@ -113,10 +114,7 @@ function drawTrendChart(canvas, noteEl, points, color, formatValue, sessionCount
     noteEl.textContent = "Пока нет данных.";
     return;
   }
-  noteEl.textContent =
-    points.length === 1
-      ? "Нужна ещё минимум одна сессия, чтобы построить линию тренда."
-      : "";
+  noteEl.textContent = "";
 
   const padding = { left: 42, right: 12, top: 12, bottom: 20 };
   const plotW = width - padding.left - padding.right;
@@ -225,7 +223,9 @@ function renderCharts(history) {
 
 function renderHistory(history) {
   renderHistoryTable(history);
-  renderCharts(history.filter(s => s.feedback === true));
+  const immediate = history.filter(s => s.immediate === true);
+  document.getElementById("trends").hidden = immediate.length === 0;
+  renderCharts(immediate);
 }
 
 

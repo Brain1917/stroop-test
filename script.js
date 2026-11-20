@@ -1,5 +1,5 @@
 const el = id => document.getElementById(id);
-let phase, deck, cursor, rows, warmupHits, active, timer, frame, nextAction;
+let phase, deck, cursor, rows, warmupHits, active, nextAction;
 let scoredDuration, blockStart;
 
 function screen(name) {
@@ -32,7 +32,7 @@ function startBlock(n) {
   deck = n ? Stroop.block() : Stroop.practice();
   blockStart = performance.now();
   el('phase').textContent = n ? 'Блок ' + n + ' из 2' : 'Разминка';
-  el('feedback').textContent = '';
+  el('screen-game').removeAttribute('data-verdict');
   updateCounts();
   screen('game');
   nextTrial();
@@ -41,22 +41,16 @@ function startBlock(n) {
 function updateCounts() {
   const correct = phase === 0 ? warmupHits : rows.filter(t => t.choice === t.ink).length;
   const total = phase === 0 ? cursor : rows.length;
-  el('counts').textContent = (phase === 0 ? 'Разминка' : 'За сессию') +
-    ' · Верно ' + correct + ' · Ошибок ' + (total - correct);
+  el('counts').textContent = 'Верно ' + correct + ' · Ошибок ' + (total - correct);
 }
 
 function nextTrial() {
-  active = null;
-  frame = requestAnimationFrame(() => {
-    if (document.hidden) { interrupt(); return; }
-    const trial = deck[cursor];
-    el('screen-game').removeAttribute('data-verdict');
-    el('feedback').textContent = '';
-    el('progress').textContent = (cursor + 1) + ' / ' + deck.length;
-    el('stimulus').textContent = Stroop.colors[trial.word].label;
-    el('stimulus').style.color = Stroop.colors[trial.ink].hex;
-    active = performance.now();
-  });
+  if (document.hidden) { interrupt(); return; }
+  const trial = deck[cursor];
+  el('progress').textContent = (cursor + 1) + ' / ' + deck.length;
+  el('stimulus').textContent = Stroop.colors[trial.word].label;
+  el('stimulus').style.color = Stroop.colors[trial.ink].hex;
+  active = performance.now();
 }
 
 function answer(choice) {
@@ -65,9 +59,7 @@ function answer(choice) {
   active = null;
   const trial = deck[cursor++];
   const correct = choice === trial.ink;
-  el('stimulus').textContent = '';
   el('screen-game').dataset.verdict = correct ? 'correct' : 'wrong';
-  el('feedback').textContent = correct ? 'Верно' : 'Ошибка · цвет букв: ' + Stroop.colors[trial.ink].label;
   if (phase === 0) {
     warmupHits += Number(correct);
 
@@ -76,19 +68,20 @@ function answer(choice) {
   }
   updateCounts();
   if (cursor === deck.length && phase > 0) scoredDuration += performance.now() - blockStart;
-  timer = setTimeout(() => cursor < deck.length ? nextTrial() : finishBlock(), correct ? 380 : 750);
+  if (cursor < deck.length) nextTrial();
+  else finishBlock();
 }
 
 function finishBlock() {
   if (phase === 0) {
     const passed = warmupHits >= 6;
     intermission('Разминка завершена', 'Верно ' + warmupHits + ' из 8. ' +
-      (passed ? 'Теперь начинается зачёт. Ошибки разминки в него не входят.' :
-        'Попробуй ещё раз. Для перехода нужны 6 верных ответов. Выбирай цвет букв.'),
+      (passed ? 'Дальше ответы идут в зачёт.' :
+        'Для перехода нужны 6 верных ответов.'),
       passed ? 'Начать первый блок' : 'Повторить разминку', () => startBlock(passed ? 1 : 0));
   } else if (phase === 1) {
     const hits = rows.filter(t => t.choice === t.ink).length;
-    intermission('Первый блок завершён', 'Верно ' + hits + ' из 32. Ошибок: ' + (32 - hits) + '. Отдохни перед вторым блоком.',
+    intermission('Первый блок завершён', 'Верно ' + hits + ' из 32. Ошибок ' + (32 - hits) + '.',
       'Начать второй блок', () => startBlock(2));
   } else {
     phase = 'result';
@@ -110,7 +103,7 @@ function finishBlock() {
         el('result-stats').append(node);
       }
     }
-    el('guidance').textContent = 'Положительная разница означает, что при конфликте верные ответы занимали больше времени. Сравнивай скорость вместе с точностью.';
+    el('guidance').textContent = 'Плюс означает, что при несовпадении цвета и слова ты отвечал медленнее.';
     saveSession(s);
     screen('result');
     el('btn-again').focus();
@@ -119,14 +112,8 @@ function finishBlock() {
 
 function interrupt() {
   if (typeof phase !== 'number') return;
-  clearTimeout(timer);
-  cancelAnimationFrame(frame);
   active = null;
-  if (phase === 2 && cursor === deck.length) {
-    finishBlock();
-    return;
-  }
-  intermission('Сессия прервана', 'Вкладка была скрыта. Чтобы пауза не повлияла на результат, начни заново.',
+  intermission('Сессия прервана', 'Вкладка была скрыта. Эта попытка не сохранена.',
     'Начать разминку', start);
 }
 
@@ -134,7 +121,6 @@ Stroop.colors.forEach((color, index) => {
   const button = document.createElement('button');
   button.className = 'answer-swatch';
   button.type = 'button';
-  button.title = color.label;
   button.setAttribute('aria-label', color.label + ', клавиша ' + (index + 1));
   button.style.backgroundColor = color.hex;
   const key = document.createElement('span');

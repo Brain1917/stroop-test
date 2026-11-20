@@ -1,6 +1,41 @@
 """Run with Python Playwright and Chrome against a local or published site."""
+import statistics
 import sys
 from playwright.sync_api import sync_playwright
+
+
+def check_copy(browser, url):
+    page = browser.new_page()
+    page.goto(url)
+    start_copy = page.locator("body").inner_text()
+    assert "клавиши 1–4" in start_copy and "два блока по 32" in start_copy
+    assert "Практика внимания к цвету" not in start_copy
+    assert "Пока нет данных" not in start_copy
+    page.locator("#btn-start").click()
+    page.locator(".answer-swatch").first.click()
+    game_copy = page.locator("body").inner_text()
+    visible_lines = [line.strip() for line in game_copy.splitlines() if line.strip()]
+    assert set(visible_lines[:4]) == {"Струп-тест", "Разминка", "2 / 8", page.locator("#stimulus").inner_text()}, visible_lines
+    assert visible_lines[4:8] == ["1", "2", "3", "4"], visible_lines
+    assert len(visible_lines) == 9 and visible_lines[-1].startswith("Верно "), visible_lines
+    assert page.locator(".answer-swatch[title]").count() == 0
+    print("Copy audit passed for start, empty history and all visible text during play.")
+    page.close()
+
+
+def check_burst(browser, url):
+    page = browser.new_page(is_mobile=True, has_touch=True, viewport={"width":390,"height":844})
+    page.goto(url)
+    page.locator("#btn-start").tap()
+    box = page.locator(".answer-swatch").first.bounding_box()
+    page.evaluate("""() => { window.tapTimes = []; document.querySelector('#answers')
+        .addEventListener('click', e => { if(e.isTrusted) tapTimes.push(performance.now()); }); }""")
+    for _ in range(6):
+        page.touchscreen.tap(box["x"] + 10, box["y"] + 10)
+    times = page.evaluate("tapTimes")
+    assert len(times) == 6 and page.locator("#progress").inner_text() == "7 / 8"
+    print(f"6 consecutive touch taps registered in {times[-1] - times[0]:.0f} ms.")
+    page.close()
 
 
 def check(browser, url):
@@ -13,6 +48,16 @@ def check(browser, url):
     page.locator("#btn-start").click()
     colors = ["красный", "синий", "зелёный", "жёлтый"]
     wrong = {0, 7, 8, 39, 71}
+    elapsed = []
+    page.evaluate("""() => {
+      for (const event of ['click', 'keydown']) {
+        document.addEventListener(event, () => { window.inputTime = performance.now(); }, true);
+        document.addEventListener(event, () => {
+          window.afterInput = [document.querySelector('#progress').textContent,
+            document.querySelector('#stimulus').textContent, performance.now() - window.inputTime];
+        });
+      }
+    }""")
     for n in range(72):
         if n in (8, 40):
             page.locator("#continue").click()
@@ -25,18 +70,13 @@ def check(browser, url):
             page.keyboard.press(str(choice + 1))
         else:
             page.locator(".answer-swatch").nth(choice).click()
-        feedback = page.locator("#feedback")
-        expected = "Ошибка" if n in wrong else "Верно"
-        assert feedback.is_visible() and expected in feedback.inner_text(), (n, expected, feedback.inner_text())
-        panel = page.locator("#screen-game")
-        expected_bg = "rgb(253, 230, 229)" if n in wrong else "rgb(225, 245, 231)"
-        assert panel.evaluate("(e) => getComputedStyle(e).backgroundColor") == expected_bg
-        offset = 0 if n < 8 else 8
-        mistakes = sum(offset <= i <= n for i in wrong)
-        assert f"Ошибок {mistakes}" in page.locator("#counts").inner_text()
-        if n in wrong:
-            assert colors[idx] in feedback.inner_text()
-        page.keyboard.press(str(choice + 1))  # stray second press during feedback
+        if n not in (7, 39, 71):
+            progress, word, ms = page.evaluate("window.afterInput")
+            position = n if n < 8 else (n - 8) % 32
+            assert progress == f"{position + 2} / {8 if n < 8 else 32}" and word in colors, (n, progress, word)
+            elapsed.append(ms)
+            assert page.locator("#screen-game").get_attribute("data-verdict") == ("wrong" if n in wrong else "correct")
+            assert not page.locator("#screen-game [role=status]:visible").count()
     page.locator("#screen-result").wait_for()
     stats = page.locator("#result-stats")
     assert "61 из 64" in stats.inner_text()
@@ -46,11 +86,13 @@ def check(browser, url):
         assert cells[1:4] == ["61 / 64", "3", "95%"], cells
         page.reload()
     assert not errors, errors
-    print("72 trials, five deliberate errors (two practice, three scored), repeated inputs ignored; results and persisted history agree.")
+    print(f"72 trials, 61/64; {len(elapsed)} synchronous transitions. Input to DOM update: median {statistics.median(elapsed):.2f} ms; max {max(elapsed):.2f} ms.")
     context.close()
 
 
 if __name__ == "__main__":
     with sync_playwright() as p:
         with p.chromium.launch(channel="chrome", chromium_sandbox=True) as browser:
+            check_copy(browser, sys.argv[1])
+            check_burst(browser, sys.argv[1])
             check(browser, sys.argv[1])
