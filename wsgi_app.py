@@ -14,6 +14,8 @@ STATIC_FILES = {
     "/": "index.html",
     "/index.html": "index.html",
     "/style.css": "style.css",
+    "/protocol.js": "protocol.js",
+    "/history.js": "history.js",
     "/script.js": "script.js",
 }
 

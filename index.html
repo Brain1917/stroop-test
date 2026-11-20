@@ -10,33 +10,43 @@
 
 <header class="app-header">
   <h1>Струп-тест</h1>
-  <p>Тренажёр когнитивного контроля. Одна сессия - 60 секунд.</p>
+  <p>Практика внимания к цвету</p>
 </header>
 
 <main>
 
   <section id="screen-start" class="screen">
-    <p class="instructions">
-      В центре появится название цвета. Цвет букв может совпадать со словом или отличаться от него.
-      Нажми на плашку, чей цвет совпадает с цветом <strong>чернил</strong>, а не с написанным словом.
-    </p>
-    <button id="btn-start" class="btn-primary" type="button">Начать сессию</button>
+    <h2>Выбери цвет букв</h2>
+    <p class="instructions">Если слово <strong style="color:#2467bf">красный</strong> написано синим, нажми синюю кнопку.
+    Можно отвечать мышью, касанием или клавишами 1–4. Используй один способ от начала до конца.</p>
+    <p>Сначала 8 проб с подсказками. Затем два блока по 32 задания с перерывом.</p>
+    <button id="btn-start" class="btn-primary" type="button">Начать разминку</button>
+    <details><summary>Как устроена тренировка</summary>
+    <p>В классическом опыте Струпа участники называли цвета вслух. Здесь ты выбираешь цвет кнопкой. Во время разминки проверь, что различаешь все четыре цвета и помнишь их места.</p>
+    <p>В каждом блоке все 16 сочетаний слова и цвета появляются дважды в случайном порядке. Поэтому само слово одинаково часто ведёт к каждой кнопке. Сравниваем время верных ответов при совпадении и при конфликте.</p>
+    <p>Для сравнения сессий используй тот же экран и способ ответа. Прогресс в упражнении виден, когда ответы ускоряются при сохранении точности. Одна сессия даёт лишь ориентир. Перенос навыка на другие задачи требует отдельной проверки.</p>
+    <p>8 проб и два коротких блока выбраны для домашней практики. Источники:
+    <a href="https://psychclassics.yorku.ca/Stroop/">опыты Струпа</a>,
+    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3609544/">влияние состава заданий</a>,
+    <a href="https://doi.org/10.3389/fnhum.2016.00588">исследование переноса навыка</a>.</p></details>
   </section>
-
+  <section id="screen-break" class="screen hidden">
+    <h2 id="break-title"></h2><p id="break-text"></p>
+    <button id="continue" class="btn-primary" type="button"></button>
+  </section>
   <section id="screen-game" class="screen hidden">
-    <div class="game-hud">
-      <div class="timer" id="timer">60.0</div>
-      <div class="score"><span id="score-correct">0</span> / <span id="score-total">0</span></div>
-    </div>
+    <div class="game-hud"><strong id="phase"></strong><span id="progress"></span></div>
     <div class="stimulus-wrap" id="stimulus-wrap">
       <div class="stimulus" id="stimulus"></div>
     </div>
     <div class="answers" id="answers"></div>
+    <p id="feedback" role="status"></p>
   </section>
 
   <section id="screen-result" class="screen hidden">
     <h2>Результат сессии</h2>
     <dl class="result-stats" id="result-stats"></dl>
+    <p id="guidance"></p>
     <button id="btn-again" class="btn-primary" type="button">Ещё раз</button>
   </section>
 
@@ -50,7 +60,7 @@
         <p class="chart-note" id="chart-accuracy-note"></p>
       </div>
       <div class="chart-card">
-        <p class="chart-title">Среднее время реакции, мс</p>
+        <p class="chart-title">Время верных ответов, мс</p>
         <canvas id="chart-rt" width="420" height="200"></canvas>
         <p class="chart-note" id="chart-rt-note"></p>
       </div>
@@ -64,8 +74,8 @@
           <th>Дата</th>
           <th>Проб</th>
           <th>Точность</th>
-          <th>Среднее RT</th>
-          <th>Интерференция</th>
+          <th>Время ответа</th>
+          <th>Разница, мс</th>
         </tr>
       </thead>
       <tbody id="history-body"></tbody>
@@ -74,12 +84,18 @@
     <p class="empty-history hidden" id="empty-history">Пока нет ни одной сессии.</p>
   </section>
 
+<details id="legacy" hidden><summary>Архив минутных сессий</summary>
+<p>Раньше кнопки меняли места, а среднее время включало ошибки. Архив хранится отдельно от новых графиков.</p>
+<div class="history-scroll"><table class="hidden"><thead><tr><th>Дата</th><th>Проб</th><th>Точность</th><th>Время ответа</th><th>Разница</th></tr></thead><tbody id="legacy-body"></tbody></table></div>
+<p id="empty-legacy"></p></details>
 </main>
 
 <footer class="app-footer">
   История сохраняется только в этом браузере на этом устройстве. При очистке данных браузера она может исчезнуть.
 </footer>
 
+<script src="protocol.js"></script>
+<script src="history.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

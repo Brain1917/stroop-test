@@ -265,3 +265,17 @@ tr:last-child td {
     grid-template-columns: 1fr;
   }
 }
+
+.app-header { padding-bottom: 16px; }
+.app-header h1 { letter-spacing: -.04em; font-size: clamp(32px, 6vw, 48px); }
+.screen h2 { margin-top: 0; }
+details { margin: 22px auto 0; text-align: left; line-height: 1.55; }
+summary { cursor: pointer; font-weight: 650; }
+.screen details { border-top: 1px solid var(--gridline); padding-top: 16px; }
+a { color: #165da8; }
+.answers button { touch-action: manipulation; }
+.answer-swatch span { background: white; color: #18212c; padding: 3px 9px; border-radius: 5px; font-weight: 650; }
+button:focus-visible, summary:focus-visible { outline: 3px solid #101828; outline-offset: 3px; }
+#feedback { min-height: 1.5em; margin-bottom: 0; }
+.playing .history, .playing #legacy { display: none; }
+#guidance { line-height: 1.5; }
